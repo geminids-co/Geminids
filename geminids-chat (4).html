@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GEMINIDS — TRANSMISSION LOG</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --gem-white: #ffffff;
+  --gem-black: #000000;
+  --gem-border: 1px solid var(--gem-black);
+  --gem-space-1: 8px; --gem-space-2: 16px; --gem-space-3: 24px; --gem-space-4: 40px; --gem-space-5: 64px;
+  --gem-font-display: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --gem-font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  --gem-text-2xs: 10px; --gem-text-xs: 11px; --gem-text-sm: 13px; --gem-text-base: 15px;
+  --gem-text-md: 19px; --gem-text-lg: 26px;
+  --gem-tracking-wide: 0.06em; --gem-tracking-widest: 0.14em;
+}
+* { box-sizing: border-box; border-radius: 0 !important; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--gem-font-mono); font-size: var(--gem-text-base); line-height: 1.5;
+  color: var(--gem-black); background: var(--gem-white); -webkit-font-smoothing: antialiased;
+}
+
+.field {
+  position: relative; isolation: isolate;
+  height: 100vh; height: 100dvh; overflow: auto;
+  display: flex; flex-direction: column;
+}
+.field::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to bottom, var(--gem-black) 0px, var(--gem-black) 1px, transparent 1px, transparent 88px),
+    repeating-linear-gradient(to right, var(--gem-black) 0px, var(--gem-black) 1px, transparent 1px, transparent 88px);
+  opacity: 0.05;
+}
+
+/* ---- Masthead ---- */
+.masthead { border-bottom: var(--gem-border); padding: var(--gem-space-2) var(--gem-space-3); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--gem-space-2); }
+.masthead .wordmark { font-family: var(--gem-font-display); font-weight: 700; font-size: var(--gem-text-lg); letter-spacing: -0.02em; text-transform: uppercase; }
+.masthead .wordmark small { display: block; font-family: var(--gem-font-mono); font-weight: 400; font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-widest); margin-top: 2px; }
+.masthead .readout { text-align: right; font-size: var(--gem-text-xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase; }
+.masthead .readout .status-line { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.status-dot { width: 7px; height: 7px; background: var(--gem-black); }
+.status-dot.offline { background: var(--gem-white); border: 1px solid var(--gem-black); }
+
+.ra-axis { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: var(--gem-tracking-wide); border-bottom: var(--gem-border); padding: 4px var(--gem-space-3); }
+.ra-axis span:first-child, .ra-axis span:last-child { opacity: 0.55; }
+
+/* ---- Presence + search bar ---- */
+.utility-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--gem-space-2);
+  border-bottom: var(--gem-border); padding: 8px var(--gem-space-3); flex-wrap: wrap;
+}
+.presence-line {
+  font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.presence-line .presence-dot { width: 6px; height: 6px; background: var(--gem-black); flex-shrink: 0; }
+.query-bar { display: flex; align-items: stretch; border: var(--gem-border); flex: 1 1 240px; max-width: 360px; margin-left: auto; }
+.query-bar input {
+  flex: 1 1 auto; border: none; outline: none; background: transparent; font-family: var(--gem-font-mono);
+  font-size: var(--gem-text-xs); color: var(--gem-black); padding: 6px 10px; min-width: 0;
+}
+.query-bar input::placeholder { color: var(--gem-black); opacity: 0.4; }
+.query-bar .query-glyph { padding: 6px 8px; border-right: var(--gem-border); display: flex; align-items: center; font-size: var(--gem-text-xs); }
+
+/* ---- Pinned standing notice ---- */
+.pin-banner {
+  display: none; max-width: 860px; width: 100%; margin: 0 auto; border-bottom: 3px solid var(--gem-black);
+  padding: 10px var(--gem-space-3); align-items: flex-start; justify-content: space-between; gap: var(--gem-space-2);
+}
+.pin-banner.visible { display: flex; }
+.pin-banner .pin-label { font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-widest); text-transform: uppercase; margin-bottom: 4px; }
+.pin-banner .pin-body { font-size: var(--gem-text-sm); line-height: 1.4; }
+.pin-banner .pin-unpin {
+  font-family: var(--gem-font-mono); font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase;
+  background: var(--gem-white); color: var(--gem-black); border: var(--gem-border); padding: 6px 10px; cursor: pointer; flex-shrink: 0;
+}
+.pin-banner .pin-unpin:hover { background: var(--gem-black); color: var(--gem-white); }
+
+/* ---- Per-message actions + citation + coordinate tags ---- */
+.log-entry .log-actions { display: flex; gap: 0; margin-top: 6px; }
+.log-entry .log-actions button {
+  font-family: var(--gem-font-mono); font-size: 9px; letter-spacing: var(--gem-tracking-wide); text-transform: uppercase;
+  background: transparent; color: var(--gem-black); border: none; padding: 2px 8px 2px 0; cursor: pointer; opacity: 0.55;
+}
+.log-entry .log-actions button:hover { opacity: 1; text-decoration: underline; }
+.log-entry.system .log-actions { display: none; }
+.cite-line {
+  font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase;
+  border-left: 2px solid var(--gem-black); padding-left: 8px; margin-bottom: 6px; opacity: 0.7;
+}
+.coord-tag {
+  border: 1px solid var(--gem-black); padding: 0 4px; font-size: 0.92em; white-space: nowrap;
+}
+.reply-preview {
+  display: none; max-width: 860px; width: 100%; margin: 0 auto; padding: 8px var(--gem-space-3) 0;
+  align-items: center; justify-content: space-between; gap: var(--gem-space-2);
+  font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase;
+}
+.reply-preview.visible { display: flex; }
+.reply-preview .reply-cancel { background: none; border: none; cursor: pointer; font-family: var(--gem-font-mono); text-decoration: underline; color: var(--gem-black); }
+
+/* ---- Callsign entry modal ---- */
+.callsign-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 10;
+  align-items: center; justify-content: center; padding: var(--gem-space-2);
+}
+.callsign-overlay.visible { display: flex; }
+.callsign-box { border: 3px solid var(--gem-black); background: var(--gem-white); padding: var(--gem-space-3); max-width: 420px; width: 100%; }
+.callsign-box h2 { font-size: var(--gem-text-md); margin-bottom: 6px; }
+.callsign-box p { font-size: var(--gem-text-xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase; opacity: 0.7; margin: 0 0 var(--gem-space-2); }
+.callsign-box .callsign-row { display: flex; border: var(--gem-border); margin-bottom: var(--gem-space-2); }
+.callsign-box input {
+  flex: 1 1 auto; border: none; outline: none; background: transparent; font-family: var(--gem-font-mono);
+  font-size: var(--gem-text-base); color: var(--gem-black); padding: 12px 14px; text-transform: uppercase;
+}
+.callsign-box button {
+  width: 100%; font-family: var(--gem-font-mono); font-size: var(--gem-text-xs); letter-spacing: var(--gem-tracking-wide);
+  text-transform: uppercase; background: var(--gem-black); color: var(--gem-white); border: var(--gem-border); padding: 12px; cursor: pointer;
+}
+.callsign-box button:hover { background: #1a1a1a; }
+
+/* ---- Change-callsign link + moderator badge in masthead ---- */
+.masthead .readout .id-line { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+.masthead .readout .id-line button {
+  font-family: var(--gem-font-mono); font-size: 9px; letter-spacing: var(--gem-tracking-wide); text-transform: uppercase;
+  background: none; border: none; text-decoration: underline; cursor: pointer; color: var(--gem-black); padding: 0;
+}
+.mod-badge { font-size: 9px; letter-spacing: var(--gem-tracking-wide); border: 1px solid var(--gem-black); padding: 1px 4px; }
+
+/* ---- Sector bar ---- */
+.sector-bar { display: flex; border-bottom: var(--gem-border); overflow-x: auto; }
+.sector-bar button {
+  font-family: var(--gem-font-mono); font-size: var(--gem-text-xs); font-weight: 700; letter-spacing: var(--gem-tracking-wide);
+  text-transform: uppercase; background: var(--gem-white); color: var(--gem-black); border: none;
+  border-right: var(--gem-border); padding: 12px 18px; cursor: pointer; white-space: nowrap;
+}
+.sector-bar button.active { background: var(--gem-black); color: var(--gem-white); }
+.sector-bar button:hover:not(.active) { background: rgba(0,0,0,0.04); }
+
+/* ---- Message stream ---- */
+.stream { flex: 1 1 0; min-height: 0; overflow-y: auto; max-width: 860px; width: 100%; margin: 0 auto; padding: var(--gem-space-3); }
+.log-entry { padding-block: var(--gem-space-2); border-bottom: var(--gem-border); }
+.log-entry:first-child { padding-top: 0; }
+.log-meta { display: flex; flex-wrap: wrap; font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase; margin-bottom: 6px; }
+.log-meta span { padding-right: 10px; margin-right: 10px; border-right: 1px solid var(--gem-black); }
+.log-meta span:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+.log-meta .tag-user { font-weight: 700; }
+.log-body { font-size: var(--gem-text-base); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.log-entry.self { border-right: 3px solid var(--gem-black); padding-right: var(--gem-space-2); }
+.log-entry.self .log-meta { justify-content: flex-end; }
+.log-entry.self .log-meta span { border-right: none; border-left: 1px solid var(--gem-black); padding-right: 0; padding-left: 10px; margin-right: 0; margin-left: 10px; }
+.log-entry.self .log-meta span:first-child { border-left: none; padding-left: 0; margin-left: 0; }
+.log-entry.system { background: var(--gem-black); color: var(--gem-white); padding: 8px var(--gem-space-2); border-bottom: none; }
+.log-entry.system .log-meta span { border-right-color: var(--gem-white); }
+.log-entry.system .log-body { font-size: var(--gem-text-xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase; }
+.stream-empty { padding: var(--gem-space-5) 0; text-align: center; font-size: var(--gem-text-xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase; opacity: 0.55; }
+
+/* ---- Transmit prompt ---- */
+.transmit-bar { border-top: 3px solid var(--gem-black); max-width: 860px; width: 100%; margin: 0 auto; padding: var(--gem-space-2) var(--gem-space-3); }
+.transmit-label { font-size: var(--gem-text-2xs); letter-spacing: var(--gem-tracking-widest); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.transmit-row { display: flex; align-items: stretch; border: var(--gem-border); }
+.transmit-prompt-glyph { font-family: var(--gem-font-mono); font-size: var(--gem-text-md); padding: 12px 14px; border-right: var(--gem-border); display: flex; align-items: center; user-select: none; }
+.transmit-row input { flex: 1 1 auto; border: none; outline: none; background: transparent; font-family: var(--gem-font-mono); font-size: var(--gem-text-base); color: var(--gem-black); padding: 12px 14px; min-width: 0; }
+.transmit-row input::placeholder { color: var(--gem-black); opacity: 0.4; }
+.transmit-row button { font-family: var(--gem-font-mono); font-size: var(--gem-text-xs); letter-spacing: var(--gem-tracking-wide); text-transform: uppercase; background: var(--gem-black); color: var(--gem-white); border: none; border-left: var(--gem-border); padding: 0 20px; cursor: pointer; }
+.transmit-row button:hover { background: #1a1a1a; }
+.transmit-row button:focus-visible, .transmit-row input:focus-visible { outline: 2px solid var(--gem-black); outline-offset: -2px; }
+
+@media (max-width: 640px) {
+  .masthead { padding: var(--gem-space-2); }
+  .stream, .transmit-bar { padding-inline: var(--gem-space-2); }
+  .masthead .wordmark { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="field">
+
+  <header class="masthead">
+    <div class="wordmark">GEMINIDS<small>TRANSMISSION LOG — COMMUNITY DATA STREAM</small></div>
+    <div class="readout">
+      <div id="clock-utc">00:00:00 UTC</div>
+      <div class="status-line">
+        <span class="status-dot offline" id="status-dot"></span>
+        <span id="status-text">LINK: CONNECTING</span>
+      </div>
+      <div class="id-line">
+        <span id="observer-id-display"></span>
+        <span class="mod-badge" id="mod-badge" style="display:none;">MOD</span>
+        <button type="button" id="change-callsign-btn">CHANGE</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="callsign-overlay" id="callsign-overlay">
+    <div class="callsign-box">
+      <h2>OBSERVER CALLSIGN</h2>
+      <p>Choose an identifier for this transmission log. Letters, numbers, underscore only.</p>
+      <div class="callsign-row">
+        <input id="callsign-input" type="text" maxlength="32" placeholder="e.g. NIGHTSKY_JO" autocomplete="off" />
+      </div>
+      <button type="button" id="callsign-confirm">CONFIRM CALLSIGN</button>
+    </div>
+  </div>
+
+  <div class="ra-axis" aria-hidden="true">
+    <span>RA 00h</span><span>04h</span><span>08h</span><span>12h</span><span>16h</span><span>20h</span><span>24h</span>
+  </div>
+
+  <nav class="sector-bar" id="sector-bar" aria-label="Sector channel select">
+    <button class="active" data-sector="SECTOR_04" data-label="OBSERVATION LOG — SECTOR_04">SECTOR_04 · GENERAL</button>
+    <button data-sector="SECTOR_11" data-label="DEEP SKY — SECTOR_11">SECTOR_11 · DEEP SKY</button>
+    <button data-sector="SECTOR_02" data-label="EQUIPMENT — SECTOR_02">SECTOR_02 · EQUIPMENT</button>
+    <button data-sector="SECTOR_19" data-label="CASUAL — SECTOR_19">SECTOR_19 · CASUAL</button>
+  </nav>
+
+  <div class="utility-bar">
+    <div class="presence-line" id="presence-line"><span class="presence-dot"></span>1 OBSERVER ACTIVE</div>
+    <div class="query-bar">
+      <span class="query-glyph" aria-hidden="true">?</span>
+      <input id="query-input" type="text" placeholder="QUERY LOG..." aria-label="Search transmissions" />
+    </div>
+  </div>
+
+  <div class="pin-banner" id="pin-banner">
+    <div>
+      <div class="pin-label">STANDING NOTICE</div>
+      <div class="pin-body" id="pin-body"></div>
+    </div>
+    <button class="pin-unpin" id="pin-unpin">UNPIN</button>
+  </div>
+
+  <main class="stream" id="stream" aria-live="polite"></main>
+
+  <div class="reply-preview" id="reply-preview">
+    <span id="reply-preview-text"></span>
+    <button class="reply-cancel" id="reply-cancel">CANCEL</button>
+  </div>
+
+  <form class="transmit-bar" id="transmit-form">
+    <div class="transmit-label">
+      <span id="transmit-target">TRANSMIT DATA TO SECTOR_04</span>
+      <span><span id="char-count">0</span>/480</span>
+    </div>
+    <div class="transmit-row">
+      <span class="transmit-prompt-glyph" aria-hidden="true">&gt;</span>
+      <input id="transmit-input" type="text" maxlength="480" autocomplete="off" placeholder="ENTER TRANSMISSION..." aria-label="Transmission input" />
+      <button type="submit" id="transmit-btn">SEND</button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+// ---- Observer identity (callsign) ----------------------------------------
+// NOTE ON PRODUCTION DEPLOYMENT: this runs in-memory only (resets on
+// reload) because it's currently rendered inside an in-chat preview
+// sandbox where localStorage isn't reliable. Once this file is actually
+// deployed on your own domain, swap getStoredCallsign/setStoredCallsign
+// below to use localStorage.getItem('geminids_callsign') /
+// localStorage.setItem(...) so a chosen callsign survives a refresh —
+// wrap both in try/catch regardless, since some users browse with
+// storage disabled entirely.
+function getStoredCallsign() { try { return localStorage.getItem('geminids_callsign'); } catch (e) { return null; } }
+function setStoredCallsign(value) { try { localStorage.setItem('geminids_callsign', value); } catch (e) {} }
+function getStoredModKey() { try { return localStorage.getItem('geminids_mod_key'); } catch (e) { return null; } }
+function setStoredModKey(value) { try { localStorage.setItem('geminids_mod_key', value); } catch (e) {} }
+
+function sanitizeCallsign(raw) {
+  return raw.toUpperCase().replace(/[^A-Z0-9_]/g, '_').slice(0, 32);
+}
+
+let USER_ID = getStoredCallsign();
+let isModerator = false;
+
+// A moderator key can be supplied via ?mod=KEY in the URL on first load.
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  const modParam = params.get('mod');
+  if (modParam) {
+    setStoredModKey(modParam);
+    params.delete('mod');
+    const cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState({}, '', cleanUrl); // strip the key out of the visible URL
+  }
+})();
+
+const WS_URL = "wss://ws.geminids.co";
+let currentSector = "SECTOR_04";
+let socket = null;
+let reconnectAttempts = 0;
+let reconnectTimer = null;
+
+let sectorMessages = [];
+let replyingTo = null;
+
+const streamEl = document.getElementById("stream");
+const formEl = document.getElementById("transmit-form");
+const inputEl = document.getElementById("transmit-input");
+const charCountEl = document.getElementById("char-count");
+const statusDotEl = document.getElementById("status-dot");
+const statusTextEl = document.getElementById("status-text");
+const clockEl = document.getElementById("clock-utc");
+const sectorBarEl = document.getElementById("sector-bar");
+const transmitTargetEl = document.getElementById("transmit-target");
+const presenceLineEl = document.getElementById("presence-line");
+const queryInputEl = document.getElementById("query-input");
+const pinBannerEl = document.getElementById("pin-banner");
+const pinBodyEl = document.getElementById("pin-body");
+const pinUnpinBtn = document.getElementById("pin-unpin");
+const replyPreviewEl = document.getElementById("reply-preview");
+const replyPreviewTextEl = document.getElementById("reply-preview-text");
+const replyCancelBtn = document.getElementById("reply-cancel");
+const callsignOverlayEl = document.getElementById("callsign-overlay");
+const callsignInputEl = document.getElementById("callsign-input");
+const callsignConfirmBtn = document.getElementById("callsign-confirm");
+const observerIdDisplayEl = document.getElementById("observer-id-display");
+const changeCallsignBtn = document.getElementById("change-callsign-btn");
+const modBadgeEl = document.getElementById("mod-badge");
+
+function updateIdentityDisplay() {
+  observerIdDisplayEl.textContent = USER_ID || "—";
+  modBadgeEl.style.display = isModerator ? "inline-block" : "none";
+}
+
+function showCallsignModal() {
+  callsignInputEl.value = "";
+  callsignOverlayEl.classList.add("visible");
+  callsignInputEl.focus();
+}
+function hideCallsignModal() {
+  callsignOverlayEl.classList.remove("visible");
+}
+
+callsignConfirmBtn.addEventListener("click", () => {
+  const clean = sanitizeCallsign(callsignInputEl.value.trim());
+  if (!clean) return;
+  USER_ID = clean;
+  setStoredCallsign(clean);
+  updateIdentityDisplay();
+  hideCallsignModal();
+  connect(); // (re)connect now that identity is set
+});
+callsignInputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") callsignConfirmBtn.click();
+});
+changeCallsignBtn.addEventListener("click", () => {
+  if (socket) socket.close();
+  showCallsignModal();
+});
+
+function tickClock() {
+  const now = new Date();
+  clockEl.textContent = `${String(now.getUTCHours()).padStart(2,"0")}:${String(now.getUTCMinutes()).padStart(2,"0")}:${String(now.getUTCSeconds()).padStart(2,"0")} UTC`;
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+function formatTimestamp(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  return `${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")} UTC`;
+}
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---- Coordinate / catalog tagging ----------------------------------------
+// Detects Messier/NGC/IC catalog references and RA/Dec-style coordinate
+// strings inside transmission text and wraps them in a bordered tag, so
+// technical content reads distinctly from conversational text in the
+// stream. Runs on the already-escaped body text, so it's safe against
+// injection — it only wraps substrings, never interprets user input as HTML.
+const COORD_PATTERN = /\b(M\s?\d{1,3}|NGC\s?\d{2,5}|IC\s?\d{2,5}|\d{1,2}h\s?\d{1,2}m(?:\s?\d{1,2}s)?|[+-]\d{1,2}°\s?\d{1,2}['′](?:\s?\d{1,2}["″])?)\b/gi;
+function tagCoordinates(escapedBody) {
+  return escapedBody.replace(COORD_PATTERN, (match) => `<span class="coord-tag">${match}</span>`);
+}
+
+// ---- Rendering --------------------------------------------------------
+function renderEntry(msg) {
+  const entry = document.createElement("article");
+  entry.className = "log-entry" + (msg.self ? " self" : "") + (msg.system ? " system" : "");
+
+  const meta = document.createElement("div");
+  meta.className = "log-meta";
+  meta.innerHTML = msg.system
+    ? `<span>[${formatTimestamp(msg.timestamp)}]</span><span>NETWORK</span>`
+    : `<span>[${formatTimestamp(msg.timestamp)}]</span><span class="tag-user">${escapeHtml(msg.userId)}</span><span>${escapeHtml(msg.sector)}</span>`;
+  entry.appendChild(meta);
+
+  if (msg.replyTo) {
+    const cite = document.createElement("div");
+    cite.className = "cite-line";
+    cite.textContent = `RE: [${formatTimestamp(msg.replyTo.timestamp)}] ${msg.replyTo.userId} — "${msg.replyTo.snippet}"`;
+    entry.appendChild(cite);
+  }
+
+  const bodyEl = document.createElement("div");
+  bodyEl.className = "log-body";
+  bodyEl.innerHTML = msg.deleted ? escapeHtml(msg.body) : tagCoordinates(escapeHtml(msg.body));
+  entry.appendChild(bodyEl);
+
+  if (!msg.system && !msg.deleted) {
+    const actions = document.createElement("div");
+    actions.className = "log-actions";
+    const replyBtn = document.createElement("button");
+    replyBtn.type = "button";
+    replyBtn.textContent = "REPLY";
+    replyBtn.addEventListener("click", () => startReply(msg));
+    actions.appendChild(replyBtn);
+
+    if (isModerator) {
+      const pinBtn = document.createElement("button");
+      pinBtn.type = "button";
+      pinBtn.textContent = "PIN";
+      pinBtn.addEventListener("click", () => togglePin(msg));
+      actions.appendChild(pinBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.textContent = "DELETE";
+      deleteBtn.addEventListener("click", () => deleteMessage(msg));
+      actions.appendChild(deleteBtn);
+    }
+    entry.appendChild(actions);
+  }
+
+  return entry;
+}
+
+function renderStream(filterText = "") {
+  const query = filterText.trim().toLowerCase();
+  streamEl.innerHTML = "";
+  const visible = sectorMessages.filter((msg) => {
+    if (!query) return true;
+    if (msg.system) return true; // system notices always stay visible regardless of filter
+    return msg.body.toLowerCase().includes(query) || msg.userId.toLowerCase().includes(query);
+  });
+  if (visible.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "stream-empty";
+    empty.textContent = "NO MATCHING TRANSMISSIONS";
+    streamEl.appendChild(empty);
+  } else {
+    visible.forEach((msg) => streamEl.appendChild(renderEntry(msg)));
+  }
+  streamEl.scrollTop = streamEl.scrollHeight;
+}
+
+function pushMessage(msg) {
+  sectorMessages.push(msg);
+  renderStream(queryInputEl.value);
+}
+
+// backward-compatible helper name used throughout the connect/submit logic below
+function appendLogEntry({ userId, sector, body, timestamp, self = false, system = false, replyTo = null }) {
+  pushMessage({ userId, sector, body, timestamp, self, system, replyTo });
+}
+
+queryInputEl.addEventListener("input", () => renderStream(queryInputEl.value));
+
+// ---- Reply flow --------------------------------------------------------
+function startReply(msg) {
+  replyingTo = { userId: msg.userId, timestamp: msg.timestamp, snippet: msg.body.slice(0, 80) };
+  replyPreviewTextEl.textContent = `REPLYING TO ${msg.userId} — [${formatTimestamp(msg.timestamp)}]`;
+  replyPreviewEl.classList.add("visible");
+  inputEl.focus();
+}
+replyCancelBtn.addEventListener("click", () => {
+  replyingTo = null;
+  replyPreviewEl.classList.remove("visible");
+});
+
+// ---- Pin / standing notice ---------------------------------------------
+function togglePin(msg) {
+  const payload = { type: "pin", sector: currentSector, userId: msg.userId, timestamp: msg.timestamp, body: msg.body };
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify(payload));
+  } else {
+    // Offline fallback: toggle locally so the UI is still demonstrable
+    // without a live server.
+    const isCurrentlyPinned = pinBannerEl.classList.contains("visible") && pinBodyEl.textContent === msg.body;
+    setPinnedNotice(isCurrentlyPinned ? null : msg);
+  }
+}
+function deleteMessage(msg) {
+  if (!isModerator) return; // server would reject anyway; this is just a client-side guard
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "delete", sector: currentSector, userId: msg.userId, timestamp: msg.timestamp }));
+  } else {
+    applyDeletion(msg.userId, msg.timestamp);
+  }
+}
+function applyDeletion(userId, timestamp) {
+  const target = sectorMessages.find((m) => m.userId === userId && m.timestamp === timestamp);
+  if (!target) return;
+  target.deleted = true;
+  target.body = "[TRANSMISSION REDACTED BY MODERATOR]";
+  renderStream(queryInputEl.value);
+}
+function setPinnedNotice(message) {
+  if (message) {
+    pinBodyEl.textContent = message.body;
+    pinBannerEl.classList.add("visible");
+  } else {
+    pinBannerEl.classList.remove("visible");
+    pinBodyEl.textContent = "";
+  }
+}
+pinUnpinBtn.addEventListener("click", () => {
+  const body = pinBodyEl.textContent;
+  const owningMsg = sectorMessages.find((m) => m.body === body);
+  if (owningMsg) togglePin(owningMsg);
+  else setPinnedNotice(null);
+});
+
+// ---- Presence -----------------------------------------------------------
+function setPresence(count) {
+  presenceLineEl.innerHTML = `<span class="presence-dot"></span>${count} OBSERVER${count === 1 ? "" : "S"} ACTIVE`;
+}
+
+// ---- Sector switching -----------------------------------------------------------
+sectorBarEl.addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-sector]");
+  if (!btn) return;
+  sectorBarEl.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentSector = btn.dataset.sector;
+  transmitTargetEl.textContent = `TRANSMIT DATA TO ${currentSector}`;
+
+  sectorMessages = [];
+  queryInputEl.value = "";
+  replyingTo = null;
+  replyPreviewEl.classList.remove("visible");
+  setPinnedNotice(null);
+  setPresence(1);
+
+  appendLogEntry({ system: true, body: `LOG VIEW SWITCHED — ${btn.dataset.label}`, timestamp: new Date().toISOString() });
+
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "switch_sector", sector: currentSector }));
+  }
+});
+
+// ---- Connection status -----------------------------------------------------------
+function setStatus(online) {
+  statusDotEl.classList.toggle("offline", !online);
+  statusTextEl.textContent = online ? "LINK: ACTIVE" : "LINK: OFFLINE — RETRYING";
+}
+
+// ---- WebSocket lifecycle -----------------------------------------------------------
+function connect() {
+  try { socket = new WebSocket(WS_URL); } catch (err) { setStatus(false); scheduleReconnect(); return; }
+
+  socket.addEventListener("open", () => {
+    reconnectAttempts = 0;
+    setStatus(true);
+    appendLogEntry({ system: true, body: `CONNECTION ESTABLISHED — CLIENT ${USER_ID}`, timestamp: new Date().toISOString() });
+    socket.send(JSON.stringify({ type: "join", userId: USER_ID, sector: currentSector, modKey: getStoredModKey() || undefined }));
+  });
+
+  socket.addEventListener("message", (event) => {
+    let payload;
+    try { payload = JSON.parse(event.data); } catch (err) { return; }
+
+    if (payload.type === "transmission") {
+      appendLogEntry({
+        userId: payload.userId, sector: payload.sector, body: payload.body,
+        timestamp: payload.timestamp, self: payload.userId === USER_ID, replyTo: payload.replyTo || null,
+      });
+    } else if (payload.type === "system") {
+      appendLogEntry({ system: true, body: payload.body, timestamp: payload.timestamp });
+    } else if (payload.type === "presence") {
+      setPresence(payload.count || 1);
+    } else if (payload.type === "pinned_update") {
+      setPinnedNotice(payload.message || null);
+    } else if (payload.type === "mod_status") {
+      isModerator = Boolean(payload.isModerator);
+      updateIdentityDisplay();
+      renderStream(queryInputEl.value); // re-render so PIN/DELETE actions appear if granted
+    } else if (payload.type === "history") {
+      // Server-sent backlog for the sector just joined/switched into.
+      // Keep any local system notices already shown (e.g. "CONNECTION
+      // ESTABLISHED") and place history before them.
+      const existingSystemNotices = sectorMessages.filter((m) => m.system);
+      sectorMessages = [
+        ...payload.messages.map((m) => ({ ...m, self: m.userId === USER_ID })),
+        ...existingSystemNotices,
+      ];
+      renderStream(queryInputEl.value);
+    } else if (payload.type === "deleted") {
+      applyDeletion(payload.userId, payload.timestamp);
+    }
+  });
+
+  socket.addEventListener("close", () => { setStatus(false); scheduleReconnect(); });
+  socket.addEventListener("error", () => { setStatus(false); socket.close(); });
+}
+
+function scheduleReconnect() {
+  clearTimeout(reconnectTimer);
+  reconnectAttempts += 1;
+  const delay = Math.min(1000 * 2 ** reconnectAttempts, 15000);
+  reconnectTimer = setTimeout(connect, delay);
+}
+
+// ---- Transmit form -----------------------------------------------------------
+inputEl.addEventListener("input", () => { charCountEl.textContent = inputEl.value.length; });
+
+formEl.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const body = inputEl.value.trim();
+  if (!body) return;
+  const timestamp = new Date().toISOString();
+  const replyTo = replyingTo;
+
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "transmission", userId: USER_ID, sector: currentSector, body, timestamp, replyTo }));
+  } else {
+    appendLogEntry({ userId: USER_ID, sector: currentSector, body, timestamp, self: true, replyTo });
+    appendLogEntry({ system: true, body: "NOT TRANSMITTED — LINK OFFLINE, QUEUED LOCALLY", timestamp });
+  }
+
+  inputEl.value = "";
+  charCountEl.textContent = "0";
+  replyingTo = null;
+  replyPreviewEl.classList.remove("visible");
+  inputEl.focus();
+});
+
+// ---- Boot -----------------------------------------------------------
+setPresence(1);
+updateIdentityDisplay();
+if (USER_ID) {
+  appendLogEntry({ system: true, body: "INITIALIZING TRANSMISSION LOG — AWAITING LINK...", timestamp: new Date().toISOString() });
+  connect();
+} else {
+  showCallsignModal(); // connect() fires once a callsign is confirmed
+}
+</script>
+
+</body>
+</html>

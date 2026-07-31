@@ -1,0 +1,188 @@
+/* ==========================================================================
+   GEMINIDS — DESIGN TOKENS & CORE UTILITIES
+   Precision Astronomical Field Journal — Interface Standard v1.0
+   Strict binary palette. No grays. No radius. No shadows.
+   ========================================================================== */
+
+:root {
+  /* ---- Color: strict binary ---- */
+  --gem-white: #ffffff;
+  --gem-black: #000000;
+  --gem-surface: var(--gem-white);
+  --gem-ink: var(--gem-black);
+
+  /* ---- Structure ---- */
+  --gem-radius: 0px;
+  --gem-border: 1px solid var(--gem-black);
+  --gem-border-hairline: 0.5px solid var(--gem-black);
+
+  /* ---- Grid ---- */
+  --gem-grid-columns: 12;
+  --gem-gutter: 0px;
+  --gem-margin-desktop: 48px;
+  --gem-margin-mobile: 16px;
+  --gem-content-max: 1440px;
+
+  /* ---- Spacing scale ---- */
+  --gem-space-1: 8px;
+  --gem-space-2: 16px;
+  --gem-space-3: 24px;
+  --gem-space-4: 40px;
+  --gem-space-5: 64px;
+  --gem-space-6: 104px;
+  --gem-space-7: 168px;
+
+  /* ---- Type families ---- */
+  --gem-font-display: 'Space Grotesk', 'Neue Haas Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --gem-font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* ---- Type scale ---- */
+  --gem-text-2xs: 10px;
+  --gem-text-xs: 11px;
+  --gem-text-sm: 13px;
+  --gem-text-base: 15px;
+  --gem-text-md: 19px;
+  --gem-text-lg: 28px;
+  --gem-text-xl: 44px;
+  --gem-text-2xl: 76px;
+
+  --gem-leading-tight: 1.05;
+  --gem-leading-data: 1.4;
+  --gem-leading-body: 1.55;
+
+  --gem-tracking-tight: -0.02em;
+  --gem-tracking-wide: 0.06em;
+  --gem-tracking-widest: 0.14em;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after { box-sizing: border-box; border-radius: var(--gem-radius) !important; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--gem-font-mono);
+  font-size: var(--gem-text-base);
+  line-height: var(--gem-leading-body);
+  color: var(--gem-ink);
+  background: var(--gem-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---- Type roles ---- */
+h1, h2, h3, .gem-display {
+  font-family: var(--gem-font-display);
+  font-weight: 700;
+  letter-spacing: var(--gem-tracking-tight);
+  text-transform: uppercase;
+  line-height: var(--gem-leading-tight);
+  margin: 0;
+}
+h1, .gem-h1 { font-size: var(--gem-text-xl); }
+h2, .gem-h2 { font-size: var(--gem-text-lg); }
+h3, .gem-h3 {
+  font-size: var(--gem-text-md);
+  font-family: var(--gem-font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.gem-eyebrow, .gem-label, .gem-meta {
+  font-family: var(--gem-font-mono);
+  font-size: var(--gem-text-xs);
+  letter-spacing: var(--gem-tracking-wide);
+  text-transform: uppercase;
+}
+
+.gem-sector-marker {
+  font-family: var(--gem-font-mono);
+  font-size: var(--gem-text-2xs);
+  letter-spacing: var(--gem-tracking-widest);
+  text-transform: uppercase;
+}
+
+/* ---- Inversion (component-level emphasis, not a theme toggle) ---- */
+.gem-invert {
+  --gem-surface: #000000;
+  --gem-ink: #ffffff;
+  background: var(--gem-surface);
+  color: var(--gem-ink);
+}
+
+/* ---- Grid system ---- */
+.gem-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--gem-grid-columns), 1fr);
+  width: 100%;
+  max-width: var(--gem-content-max);
+  margin-inline: auto;
+  border-left: var(--gem-border);
+}
+.gem-grid > * {
+  border-right: var(--gem-border);
+  border-bottom: var(--gem-border);
+  padding: var(--gem-space-3);
+}
+
+/* ---- Celestial coordinate field (signature background) ---- */
+.gem-celestial-field { position: relative; isolation: isolate; }
+.gem-celestial-field::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to bottom, var(--gem-ink) 0px, var(--gem-ink) 1px, transparent 1px, transparent 96px),
+    repeating-linear-gradient(to right, var(--gem-ink) 0px, var(--gem-ink) 1px, transparent 1px, transparent 96px);
+  opacity: 0.06;
+}
+
+/* ---- Crosshair marker ---- */
+.gem-crosshair { position: relative; width: 24px; height: 24px; flex-shrink: 0; }
+.gem-crosshair::before, .gem-crosshair::after { content: ""; position: absolute; background: var(--gem-ink); }
+.gem-crosshair::before { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
+.gem-crosshair::after { left: 50%; top: 0; height: 100%; width: 1px; transform: translateX(-50%); }
+.gem-crosshair-center {
+  position: absolute; top: 50%; left: 50%;
+  width: 4px; height: 4px; background: var(--gem-ink);
+  transform: translate(-50%, -50%);
+}
+
+/* ---- RA axis ruler ---- */
+.gem-ra-axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--gem-font-mono);
+  font-size: 10px;
+  letter-spacing: var(--gem-tracking-wide);
+  border-top: var(--gem-border);
+  padding-top: 4px;
+}
+
+/* ---- Rule / divider ---- */
+.gem-rule { border: none; border-top: var(--gem-border); margin: 0; }
+.gem-rule-thick { border: none; border-top: 3px solid var(--gem-ink); margin: 0; }
+
+/* ---- Buttons: square, no radius, invert on hover ---- */
+.gem-btn {
+  font-family: var(--gem-font-mono);
+  font-size: var(--gem-text-xs);
+  letter-spacing: var(--gem-tracking-wide);
+  text-transform: uppercase;
+  background: var(--gem-surface);
+  color: var(--gem-ink);
+  border: var(--gem-border);
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.1s linear, color 0.1s linear;
+}
+.gem-btn:hover { background: var(--gem-ink); color: var(--gem-surface); }
+.gem-btn:focus-visible { outline: 3px solid var(--gem-ink); outline-offset: 2px; }
+
+/* ---- Accessibility: visible focus everywhere ---- */
+:focus-visible { outline: 2px solid var(--gem-black); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
